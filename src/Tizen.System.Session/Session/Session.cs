@@ -125,6 +125,39 @@ namespace Tizen.System
         }
 
         /// <summary>
+        /// Gets a list of all available subsession profile IDs for this session.
+        /// </summary>
+        /// <remarks>
+        /// The list of profiles depends on whether the session UID for this session object exists or not. If it
+        /// doesn't, the profile list is empty (in particular this is not an error).
+        /// However if the session UID exists, the profile list will contain the subsession
+        /// IDs (if they exist), but also the default value, which is "" (empty string, see EmptyUser field).
+        /// This doesn't mean that "" is a subsession ID in the same way as others; it is just a marker meaning that no subsession is
+        /// enabled.
+        /// </remarks>
+        /// <exception cref="ArgumentException">Session UID of this object is invalid</exception>
+        /// <exception cref="OutOfMemoryException">Out of memory</exception>
+        /// <exception cref="IOException">Internal error</exception>
+        /// <exception cref="UnauthorizedAccessException">Not permitted</exception>
+        /// <exception cref="NotSupportedException">Not supported</exception>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public IReadOnlyList<string> GetProfiles()
+        {
+
+            IntPtr ptr;
+            int count;
+
+            SessionError ret = Interop.Session.SubsessionGetProfileList(SessionUID, out ptr, out count);
+            CheckError(ret, "Interop failed to get profile list");
+
+            string[] profiles;
+            IntPtrToStringArray(ptr, count, out profiles);
+            Interop.Session.SubsessionFreeProfileList(ptr);
+
+            return new List<string>(profiles);
+        }
+
+        /// <summary>
         /// Gets a currently active subession user ID for this session.
         /// </summary>
         /// <remarks>
@@ -145,6 +178,29 @@ namespace Tizen.System
             CheckError(ret, "Interop failed to get current subsession user");
 
             return user.ToString();
+        }
+
+        /// <summary>
+        /// Gets a currently active subession profile ID for this session.
+        /// </summary>
+        /// <remarks>
+        /// When no subsession is enabled, "" (empty string, see EmptyUser field) is returned.
+        /// This doesn't mean that "" is a subsession ID in the same way as others; it is just a marker meaning
+        /// that no subsession is enabled.
+        /// </remarks>
+        /// <exception cref="ArgumentException">Session UID of this object is invalid</exception>
+        /// <exception cref="OutOfMemoryException">Out of memory</exception>
+        /// <exception cref="IOException">Internal error</exception>
+        /// <exception cref="UnauthorizedAccessException">Not permitted</exception>
+        /// <exception cref="NotSupportedException">Not supported</exception>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string GetCurrentProfile()
+        {
+            StringBuilder profile = new StringBuilder(MaxUserLength);
+            SessionError ret = Interop.Session.SubsessionGetCurrentProfile(SessionUID, profile);
+            CheckError(ret, "Interop failed to get current subsession profile");
+
+            return profile.ToString();
         }
 
         /// <summary>
@@ -187,6 +243,49 @@ namespace Tizen.System
 
             SessionError ret = Interop.Session.SubsessionAddUser(SessionUID, userName, _replyMap[taskID], (IntPtr)taskID);
             CheckError(ret, "Interop failed to register a reply for adding a user");
+            return task.Task;
+        }
+
+        /// <summary>
+        /// Request new profile subsession to be created.
+        /// </summary>
+        /// <param name="profileName">Subesssion profile ID to be created</param>
+        /// <remarks>
+        /// Subsession ID must not start with a dot or have slashes.
+        /// </remarks>
+        /// <exception cref="ArgumentException">Session UID of this object is invalid, or profile ID is not a valid subession ID</exception>
+        /// <exception cref="InvalidOperationException"> Provided subsession profile ID already exists</exception>
+        /// <exception cref="OutOfMemoryException">Out of memory</exception>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public Task SubsessionAddProfileAsync(string profileName)
+        {
+            var task = new TaskCompletionSource<bool>();
+            int taskID = 0;
+
+            lock (_replyLock)
+            {
+                taskID = _replyID++;
+            }
+
+            _replyMap[taskID] = (int result, IntPtr data) =>
+            {
+                try
+                {
+                    CheckError((SessionError)result, "Interop failed to complete adding a new subsession profile");
+                    task.SetResult(true);
+                }
+                catch (Exception exception)
+                {
+                    task.SetException(exception);
+                }
+                finally
+                {
+                    _replyMap.Remove((int)data);
+                }
+            };
+
+            SessionError ret = Interop.Session.SubsessionAddProfile(SessionUID, profileName, _replyMap[taskID], (IntPtr)taskID);
+            CheckError(ret, "Interop failed to register a reply for adding a profile");
             return task.Task;
         }
 
@@ -236,6 +335,51 @@ namespace Tizen.System
         }
 
         /// <summary>
+        /// Request an existing profile subsession to be removed.
+        /// </summary>
+        /// <param name="userName">Existing subesssion profile ID to be removed</param>
+        /// <remarks>
+        /// Subsession ID must not start with a dot or have slashes.
+        /// Only inactive session ID can be removed. In order remove currently used session ID first switch to special
+        /// session ID "" (empty string, see EmptyUser), and only after switch completes, remove previously active session ID.
+        /// </remarks>
+        /// <exception cref="ArgumentException">Session UID of this object is invalid, or user ID is not a valid subession ID</exception>
+        /// <exception cref="InvalidOperationException">Provided subsession user ID does not exist</exception>
+        /// <exception cref="OutOfMemoryException">Out of memory</exception>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public Task SubsessionRemoveProfileAsync(string profileName)
+        {
+            var task = new TaskCompletionSource<bool>();
+            int taskID = 0;
+
+            lock (_replyLock)
+            {
+                taskID = _replyID++;
+            }
+
+            _replyMap[taskID] = (int result, IntPtr data) =>
+            {
+                try
+                {
+                    CheckError((SessionError)result, "Interop failed to remove a subsession profile");
+                    task.SetResult(true);
+                }
+                catch (Exception exception)
+                {
+                    task.SetException(exception);
+                }
+                finally
+                {
+                    _replyMap.Remove((int)data);
+                }
+            };
+
+            SessionError ret = Interop.Session.SubsessionRemoveProfile(SessionUID, profileName, _replyMap[taskID], (IntPtr)taskID);
+            CheckError(ret, "Interop failed to register a reply for removing a profile");
+            return task.Task;
+        }
+
+        /// <summary>
         /// Request a subession to become currently active.
         /// </summary>
         /// <param name="userName">Existing subesssion user ID to be set as active</param>
@@ -277,6 +421,51 @@ namespace Tizen.System
 
             SessionError ret = Interop.Session.SubsessionSwitchUser(SessionUID, userName, _replyMap[taskID], (IntPtr)taskID);
             CheckError(ret, "Interop failed to register a reply for switching a user");
+            return task.Task;
+        }
+
+        /// <summary>
+        /// Request a subsession to become currently active.
+        /// </summary>
+        /// <param name="userName">Existing subsession profile ID to be set as active</param>
+        /// <remarks>
+        /// Subsession ID must not start with a dot or have slashes.
+        /// Special subsession ID "" (empty string, see EmptyUser) can be switched to, when it's required to deactivate
+        /// current subsession (this step is needed when current session is to be removed).
+        /// </remarks>
+        /// <exception cref="ArgumentException">Session UID of this object is invalid, or profile ID is not a valid subession ID</exception>
+        /// <exception cref="InvalidOperationException">Provided subsession profile ID to switch to does not exist</exception>
+        /// <exception cref="OutOfMemoryException">Out of memory</exception>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public Task SubsessionSwitchProfileAsync(string profileName)
+        {
+            var task = new TaskCompletionSource<bool>();
+            int taskID = 0;
+
+            lock (_replyLock)
+            {
+                taskID = _replyID++;
+            }
+
+            _replyMap[taskID] = (int result, IntPtr data) =>
+            {
+                try
+                {
+                    CheckError((SessionError)result, "Interop failed to switch to a different subsession profile");
+                    task.SetResult(true);
+                }
+                catch (Exception exception)
+                {
+                    task.SetException(exception);
+                }
+                finally
+                {
+                    _replyMap.Remove((int)data);
+                }
+            };
+
+            SessionError ret = Interop.Session.SubsessionSwitchProfile(SessionUID, profileName, _replyMap[taskID], (IntPtr)taskID);
+            CheckError(ret, "Interop failed to register a reply for switching a profile");
             return task.Task;
         }
 

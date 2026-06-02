@@ -47,6 +47,24 @@ internal static partial class Interop
         [DllImport(Libraries.Session, EntryPoint = "subsession_get_current_user", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         public static extern SessionError SubsessionGetCurrentUser(int session_uid, StringBuilder user);
 
+        [DllImport(Libraries.Session, EntryPoint = "subsession_add_profile", CallingConvention = CallingConvention.Cdecl)]
+        public static extern SessionError SubsessionAddProfile(int session_uid, string profile, SubsessionReplyCallback cb, IntPtr data);
+
+        [DllImport(Libraries.Session, EntryPoint = "subsession_remove_profile", CallingConvention = CallingConvention.Cdecl)]
+        public static extern SessionError SubsessionRemoveProfile(int session_uid, string profile, SubsessionReplyCallback cb, IntPtr data);
+
+        [DllImport(Libraries.Session, EntryPoint = "subsession_switch_profile", CallingConvention = CallingConvention.Cdecl)]
+        public static extern SessionError SubsessionSwitchProfile(int session_uid, string next_profile, SubsessionReplyCallback cb, IntPtr data);
+
+        [DllImport(Libraries.Session, EntryPoint = "subsession_get_profile_list", CallingConvention = CallingConvention.Cdecl)]
+        public static extern SessionError SubsessionGetProfileList(int session_uid, out IntPtr list, out int profile_count);
+
+        [DllImport(Libraries.Session, EntryPoint = "subsession_free_profile_list", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void SubsessionFreeProfileList(IntPtr list);
+
+        [DllImport(Libraries.Session, EntryPoint = "subsession_get_current_profile", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        public static extern SessionError SubsessionGetCurrentProfile(int session_uid, StringBuilder profile);
+
         [DllImport(Libraries.Session, EntryPoint = "subsession_register_event_callback", CallingConvention = CallingConvention.Cdecl)]
         public static extern SessionError SubesssionRegisterEventCallback(int session_uid, SessionEventType event_bits, SubsessionEventCallback cb, IntPtr data);
 
