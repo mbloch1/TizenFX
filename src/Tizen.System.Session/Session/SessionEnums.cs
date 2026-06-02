@@ -26,5 +26,9 @@ namespace Tizen.System
         RemoveUserWait = 1 << 1,
         SwitchUserWait = 1 << 2,
         SwitchUserCompletion = 1 << 3,
+        AddProfileWait = 1 << 4,
+        RemoveProfileWait = 1 << 5,
+        SwitchProfileWait = 1 << 6,
+        SwitchProfileCompletion = 1 << 7,
     }
 }

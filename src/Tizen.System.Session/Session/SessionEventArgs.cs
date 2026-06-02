@@ -155,4 +155,113 @@ namespace Tizen.System
     {
         internal SwitchUserCompletionEventArgs(SubsessionEventInfoNative eventInfo) : base(eventInfo) { }
     }
+
+    /// <summary>
+    /// An event argument type for AddProfileWait event type
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public class AddProfileEventArgs : SubsessionEventArgs
+    {
+        /// <summary>
+        /// Added subsession user ID
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string ProfileName { get; internal set; }
+
+        internal AddProfileEventArgs(SubsessionEventInfoNative eventInfo)
+            : base(eventInfo)
+        {
+            unsafe
+            {
+                ProfileName = Encoding.ASCII
+                    .GetString(eventInfo.Union.AddProfile.ProfileName, Session.MaxUserLength)
+                    .TrimEnd('\0');
+            }
+        }
+
+    }
+
+    /// <summary>
+    /// An event argument type for RemoveProfileWait event type
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public class RemoveProfileEventArgs : SubsessionEventArgs
+    {
+        /// <summary>
+        /// Removed subsession user ID
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string ProfileName { get; internal set; }
+
+        internal RemoveProfileEventArgs(SubsessionEventInfoNative eventInfo)
+            : base(eventInfo)
+        {
+            unsafe
+            {
+                ProfileName = Encoding.ASCII
+                    .GetString(eventInfo.Union.RemoveProfile.ProfileName, Session.MaxUserLength)
+                    .TrimEnd('\0');
+            }
+        }
+    }
+
+    /// <summary>
+    /// A generic base class for Switch event types
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public abstract class SwitchProfileEventArgs : SubsessionEventArgs
+    {
+        /// <summary>
+        /// ID of this switch operation
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public long SwitchID { get; internal set; }
+
+        /// <summary>
+        /// Active subsession user ID before this switch operation
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string ProfileNamePrev { get; internal set; }
+
+        /// <summary>
+        /// Active subsession ID after this switch operation
+        /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public string ProfileNameNext { get; internal set; }
+
+        internal SwitchProfileEventArgs(SubsessionEventInfoNative eventInfo)
+            : base(eventInfo)
+        {
+            SwitchID = eventInfo.Union.SwitchProfile.SwitchID;
+
+            unsafe
+            {
+                ProfileNamePrev = Encoding.ASCII
+                    .GetString(eventInfo.Union.SwitchProfile.ProfileNamePrev, Session.MaxUserLength)
+                    .TrimEnd('\0');
+
+                ProfileNameNext = Encoding.ASCII
+                    .GetString(eventInfo.Union.SwitchProfile.ProfileNameNext, Session.MaxUserLength)
+                    .TrimEnd('\0');
+            }
+        }
+    }
+
+    /// <summary>
+    /// An event argument type for SwitchProfileWait event type
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public class SwitchProfileWaitEventArgs : SwitchProfileEventArgs
+    {
+        internal SwitchProfileWaitEventArgs(SubsessionEventInfoNative eventInfo) : base(eventInfo) { }
+    }
+
+    /// <summary>
+    /// An event argument type for SwitchProfileCompleted event type
+    /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public class SwitchProfileCompletionEventArgs : SwitchProfileEventArgs
+    {
+        internal SwitchProfileCompletionEventArgs(SubsessionEventInfoNative eventInfo) : base(eventInfo) { }
+    }
 }

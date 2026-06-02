@@ -42,6 +42,12 @@ namespace Tizen.System
         public RemoveUserInfo RemoveUser;
         [FieldOffset(0)]
         public SwitchUserInfo SwitchUser;
+        [FieldOffset(0)]
+        public AddProfileInfo AddProfile;
+        [FieldOffset(0)]
+        public RemoveProfileInfo RemoveProfile;
+        [FieldOffset(0)]
+        public SwitchProfileInfo SwitchProfile;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -64,5 +70,27 @@ namespace Tizen.System
         public fixed byte UserNamePrev[Session.MaxUserLength];
 
         public fixed byte UserNameNext[Session.MaxUserLength];
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    internal unsafe struct AddProfileInfo
+    {
+        public fixed byte ProfileName[Session.MaxUserLength];
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    internal unsafe struct RemoveProfileInfo
+    {
+        public fixed byte ProfileName[Session.MaxUserLength];
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    internal unsafe struct SwitchProfileInfo
+    {
+        public long SwitchID;
+
+        public fixed byte ProfileNamePrev[Session.MaxUserLength];
+
+        public fixed byte ProfileNameNext[Session.MaxUserLength];
     }
 }
